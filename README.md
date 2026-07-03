@@ -1,21 +1,21 @@
 # RF-DETR RunPod Training Image
 
-This is a reusable Docker template for training Roboflow RF-DETR models on a GPU box such as RunPod.
+Reusable Docker image for training Roboflow RF-DETR models on GPU machines such as RunPod.
 
-The image downloads a Roboflow dataset at runtime, then calls `model.train(...)`. Keep your Roboflow API key out of the image and pass it as an environment variable in RunPod.
+The container downloads a Roboflow dataset at runtime, validates the dataset layout, and then calls `model.train(...)`. Your Roboflow API key is supplied as a runtime environment variable and is never baked into the image.
 
-## Build and Push
+## Use The Container
 
-```bash
-docker login
-docker build -t YOUR_DOCKERHUB_USER/rfdetr-train:1.8.3 .
-docker push YOUR_DOCKERHUB_USER/rfdetr-train:1.8.3
-```
-
-Use this image name in a RunPod template:
+Use this Docker image in your RunPod template:
 
 ```text
-YOUR_DOCKERHUB_USER/rfdetr-train:1.8.3
+petemaher/rfdetr-train:1.0.0
+```
+
+Set the container command to the default command from the image. The image runs:
+
+```bash
+python /opt/rfdetr/train_rfdetr.py
 ```
 
 ## Required Environment Variables
@@ -63,28 +63,18 @@ MODEL_INIT_JSON='{"pretrain_weights": null}'
 EXTRA_EXPORT_ARGS_JSON='{"dynamic_batch": true}'
 ```
 
-## Local GPU Test
+## RunPod Setup
 
-```bash
-docker run --rm --gpus all --ipc=host \
-  -e ROBOFLOW_API_KEY="$ROBOFLOW_API_KEY" \
-  -e ROBOFLOW_DATASET_URL="https://universe.roboflow.com/workspace-slug/project-slug/dataset/1" \
-  -e EPOCHS=10 \
-  -e BATCH_SIZE=4 \
-  -e GRAD_ACCUM_STEPS=4 \
-  -v "$PWD/output:/workspace/output" \
-  YOUR_DOCKERHUB_USER/rfdetr-train:1.8.3
+Create a RunPod pod or template with:
+
+```text
+Container image: petemaher/rfdetr-train:1.0.0
+Container disk:  50 GB
+Volume disk:     150 GB or larger
+Volume mount:    /workspace
 ```
 
-## RunPod Template Notes
-
-Set the container image to your Docker Hub image.
-
-Use a GPU with enough VRAM for the selected variant. Start with `MODEL_VARIANT=medium`, `BATCH_SIZE=4`, and `GRAD_ACCUM_STEPS=4`; if you hit out-of-memory, lower `BATCH_SIZE` or use `BATCH_SIZE=auto`.
-
-Mount persistent storage at `/workspace` or at least `/workspace/output` so checkpoints survive the pod lifecycle.
-
-Set these RunPod environment variables:
+Start with:
 
 ```bash
 ROBOFLOW_API_KEY=...
@@ -98,4 +88,85 @@ LR=1e-4
 OUTPUT_DIR=/workspace/output
 ```
 
+Use a GPU with enough VRAM for the selected variant. Start with `MODEL_VARIANT=medium`, `BATCH_SIZE=4`, and `GRAD_ACCUM_STEPS=4`; if you hit out-of-memory, lower `BATCH_SIZE` or use `BATCH_SIZE=auto`.
+
+Mount persistent storage at `/workspace` or at least `/workspace/output` so checkpoints survive the pod lifecycle.
+
 Checkpoints are written to `OUTPUT_DIR`, including RF-DETR's best checkpoint files such as `checkpoint_best_total.pth`.
+
+## Local GPU Test
+
+```bash
+docker run --rm --gpus all --ipc=host \
+  -e ROBOFLOW_API_KEY="$ROBOFLOW_API_KEY" \
+  -e ROBOFLOW_DATASET_URL="https://universe.roboflow.com/workspace-slug/project-slug/dataset/1" \
+  -e EPOCHS=10 \
+  -e BATCH_SIZE=4 \
+  -e GRAD_ACCUM_STEPS=4 \
+  -v "$PWD/output:/workspace/output" \
+  petemaher/rfdetr-train:1.0.0
+```
+
+## Output Files
+
+Training output is written to:
+
+```text
+/workspace/output
+```
+
+Dataset downloads are written to:
+
+```text
+/workspace/dataset
+```
+
+The RF-DETR model cache can be redirected with `RF_HOME` if needed:
+
+```bash
+RF_HOME=/workspace/models
+```
+
+## Publish New Versions
+
+These steps are for maintainers updating this image.
+
+Build a new image tag:
+
+```bash
+docker build -t petemaher/rfdetr-train:1.0.1 .
+```
+
+Log in to Docker Hub if needed:
+
+```bash
+docker login -u petemaher
+```
+
+Push the new image:
+
+```bash
+docker push petemaher/rfdetr-train:1.0.1
+```
+
+Optionally update the floating `latest` tag:
+
+```bash
+docker tag petemaher/rfdetr-train:1.0.1 petemaher/rfdetr-train:latest
+docker push petemaher/rfdetr-train:latest
+```
+
+If Docker requires `sudo`, log in and push with the same Docker user context:
+
+```bash
+sudo docker login -u petemaher
+sudo docker push petemaher/rfdetr-train:1.0.1
+```
+
+Then commit and push the README or code changes:
+
+```bash
+git add .
+git commit -m "Update training image docs"
+git push origin main
+```
