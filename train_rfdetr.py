@@ -6,6 +6,7 @@ import os
 import shutil
 import sys
 import zipfile
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
@@ -276,7 +277,7 @@ def get_model_class() -> type[Any]:
 
 
 def build_train_args(dataset_root: Path) -> dict[str, Any]:
-    output_dir = Path(env("OUTPUT_DIR", "/workspace/output")).expanduser()
+    output_dir = get_output_dir()
     output_dir.mkdir(parents=True, exist_ok=True)
 
     args: dict[str, Any] = {
@@ -319,7 +320,40 @@ def build_train_args(dataset_root: Path) -> dict[str, Any]:
     return args
 
 
+def get_output_dir() -> Path:
+    return Path(env("OUTPUT_DIR", "/workspace/output")).expanduser()
+
+
+def get_completion_file(output_dir: Path) -> Path:
+    return Path(env("TRAINING_COMPLETE_FILE", str(output_dir / ".training_complete"))).expanduser()
+
+
+def exit_if_training_already_completed() -> None:
+    output_dir = get_output_dir()
+    completion_file = get_completion_file(output_dir)
+    if env_bool("FORCE_RERUN", False):
+        return
+    if not completion_file.exists():
+        return
+
+    log(f"Training already completed; found {completion_file}.")
+    log("Set FORCE_RERUN=true or change OUTPUT_DIR to start another training run.")
+    raise SystemExit(0)
+
+
+def mark_training_completed(output_dir: Path) -> None:
+    completion_file = get_completion_file(output_dir)
+    completion_file.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "completed_at": datetime.now(timezone.utc).isoformat(),
+        "output_dir": str(output_dir),
+    }
+    completion_file.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
 def main() -> int:
+    exit_if_training_already_completed()
+
     dataset_root = resolve_dataset()
     validate_dataset_root(dataset_root)
     log(f"Using dataset directory: {dataset_root}")
@@ -340,6 +374,7 @@ def main() -> int:
         log(f"Exporting ONNX to {output_dir}...")
         model.export(output_dir=output_dir, **export_args)
 
+    mark_training_completed(Path(train_args["output_dir"]))
     log("Training job complete.")
     return 0
 

@@ -45,6 +45,7 @@ GRAD_ACCUM_STEPS=2
 LR=1e-4
 OUTPUT_DIR=/workspace/output
 DATASET_DIR=/workspace/dataset
+FORCE_RERUN=false
 TENSORBOARD=true
 WANDB=false
 ```
@@ -95,6 +96,18 @@ Mount persistent storage at `/workspace` or at least `/workspace/output` so chec
 
 Checkpoints are written to `OUTPUT_DIR`, including RF-DETR's best checkpoint files such as `checkpoint_best_total.pth`.
 
+When training completes successfully, the container writes:
+
+```text
+/workspace/output/.training_complete
+```
+
+If the training command is invoked again with the same `OUTPUT_DIR`, the script exits without starting another run. To intentionally train again, set a new `OUTPUT_DIR` or set:
+
+```bash
+FORCE_RERUN=true
+```
+
 ## Local GPU Test
 
 ```bash
@@ -115,6 +128,18 @@ Training output is written to:
 
 ```text
 /workspace/output
+```
+
+The completion guard is written to:
+
+```text
+/workspace/output/.training_complete
+```
+
+Override the guard path with:
+
+```bash
+TRAINING_COMPLETE_FILE=/workspace/output/my-complete-marker.json
 ```
 
 Dataset downloads are written to:
