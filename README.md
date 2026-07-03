@@ -40,8 +40,8 @@ DATASET_FORMAT=coco
 MODEL_TASK=detection
 MODEL_VARIANT=medium
 EPOCHS=100
-BATCH_SIZE=4
-GRAD_ACCUM_STEPS=4
+BATCH_SIZE=8
+GRAD_ACCUM_STEPS=2
 LR=1e-4
 OUTPUT_DIR=/workspace/output
 DATASET_DIR=/workspace/dataset
@@ -58,7 +58,7 @@ Supported `MODEL_TASK` values are `detection` and `segmentation`. For segmentati
 For less common RF-DETR train parameters, pass JSON:
 
 ```bash
-EXTRA_TRAIN_ARGS_JSON='{"patience": 10, "checkpoint_interval": 5}'
+EXTRA_TRAIN_ARGS_JSON='{"eval_interval":5,"log_per_class_metrics":false,"pin_memory":true,"persistent_workers":true,"prefetch_factor":4,"patience":10,"checkpoint_interval":5}'
 MODEL_INIT_JSON='{"pretrain_weights": null}'
 EXTRA_EXPORT_ARGS_JSON='{"dynamic_batch": true}'
 ```
@@ -82,13 +82,14 @@ ROBOFLOW_DATASET_URL=...
 DATASET_FORMAT=coco
 MODEL_VARIANT=medium
 EPOCHS=100
-BATCH_SIZE=4
-GRAD_ACCUM_STEPS=4
+BATCH_SIZE=8
+GRAD_ACCUM_STEPS=2
 LR=1e-4
 OUTPUT_DIR=/workspace/output
+EXTRA_TRAIN_ARGS_JSON={"eval_interval":5,"log_per_class_metrics":false,"pin_memory":true,"persistent_workers":true,"prefetch_factor":4}
 ```
 
-Use a GPU with enough VRAM for the selected variant. Start with `MODEL_VARIANT=medium`, `BATCH_SIZE=4`, and `GRAD_ACCUM_STEPS=4`; if you hit out-of-memory, lower `BATCH_SIZE` or use `BATCH_SIZE=auto`.
+Use a GPU with enough VRAM for the selected variant. Start with `MODEL_VARIANT=medium`, `BATCH_SIZE=8`, and `GRAD_ACCUM_STEPS=2`; if VRAM is still underused, try `BATCH_SIZE=16` and `GRAD_ACCUM_STEPS=1`. If you hit out-of-memory, lower `BATCH_SIZE` or use `BATCH_SIZE=auto`.
 
 Mount persistent storage at `/workspace` or at least `/workspace/output` so checkpoints survive the pod lifecycle.
 
@@ -101,8 +102,9 @@ docker run --rm --gpus all --ipc=host \
   -e ROBOFLOW_API_KEY="$ROBOFLOW_API_KEY" \
   -e ROBOFLOW_DATASET_URL="https://universe.roboflow.com/workspace-slug/project-slug/dataset/1" \
   -e EPOCHS=10 \
-  -e BATCH_SIZE=4 \
-  -e GRAD_ACCUM_STEPS=4 \
+  -e BATCH_SIZE=8 \
+  -e GRAD_ACCUM_STEPS=2 \
+  -e EXTRA_TRAIN_ARGS_JSON='{"eval_interval":5,"log_per_class_metrics":false,"pin_memory":true,"persistent_workers":true,"prefetch_factor":4}' \
   -v "$PWD/output:/workspace/output" \
   petemaher/rfdetr-train:1.0.0
 ```

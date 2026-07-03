@@ -11,9 +11,10 @@ ENV DEBIAN_FRONTEND=noninteractive \
     MODEL_TASK=detection \
     MODEL_VARIANT=medium \
     EPOCHS=100 \
-    BATCH_SIZE=4 \
-    GRAD_ACCUM_STEPS=4 \
-    LR=1e-4
+    BATCH_SIZE=8 \
+    GRAD_ACCUM_STEPS=2 \
+    LR=1e-4 \
+    EXTRA_TRAIN_ARGS_JSON='{"eval_interval":5,"log_per_class_metrics":false,"pin_memory":true,"persistent_workers":true,"prefetch_factor":4}'
 
 WORKDIR /workspace
 
