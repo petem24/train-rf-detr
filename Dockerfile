@@ -14,6 +14,8 @@ ENV DEBIAN_FRONTEND=noninteractive \
     BATCH_SIZE=8 \
     GRAD_ACCUM_STEPS=2 \
     LR=1e-4 \
+    KEEP_ALIVE_AFTER_TRAINING=true \
+    POST_TRAINING_SHELL=/bin/bash \
     EXTRA_TRAIN_ARGS_JSON='{"eval_interval":5,"log_per_class_metrics":false,"pin_memory":true,"persistent_workers":true,"prefetch_factor":4}'
 
 WORKDIR /workspace

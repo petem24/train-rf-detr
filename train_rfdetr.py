@@ -5,6 +5,7 @@ import json
 import os
 import shutil
 import sys
+import time
 import zipfile
 from datetime import datetime, timezone
 from pathlib import Path
@@ -338,6 +339,7 @@ def exit_if_training_already_completed() -> None:
 
     log(f"Training already completed; found {completion_file}.")
     log("Set FORCE_RERUN=true or change OUTPUT_DIR to start another training run.")
+    keep_alive_after_training()
     raise SystemExit(0)
 
 
@@ -349,6 +351,20 @@ def mark_training_completed(output_dir: Path) -> None:
         "output_dir": str(output_dir),
     }
     completion_file.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def keep_alive_after_training() -> None:
+    if not env_bool("KEEP_ALIVE_AFTER_TRAINING", True):
+        return
+
+    shell = env("POST_TRAINING_SHELL", "/bin/bash")
+    if shell and sys.stdin.isatty() and shutil.which(shell):
+        log(f"Training finished. Opening interactive shell: {shell}")
+        os.execvp(shell, [shell])
+
+    log("Training finished. Keeping container idle; attach with a terminal or stop the pod when done.")
+    while True:
+        time.sleep(3600)
 
 
 def main() -> int:
@@ -376,6 +392,7 @@ def main() -> int:
 
     mark_training_completed(Path(train_args["output_dir"]))
     log("Training job complete.")
+    keep_alive_after_training()
     return 0
 
 

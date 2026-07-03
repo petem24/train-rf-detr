@@ -46,6 +46,7 @@ LR=1e-4
 OUTPUT_DIR=/workspace/output
 DATASET_DIR=/workspace/dataset
 FORCE_RERUN=false
+KEEP_ALIVE_AFTER_TRAINING=true
 TENSORBOARD=true
 WANDB=false
 ```
@@ -107,6 +108,8 @@ If the training command is invoked again with the same `OUTPUT_DIR`, the script 
 ```bash
 FORCE_RERUN=true
 ```
+
+By default, `KEEP_ALIVE_AFTER_TRAINING=true` keeps the container idle after a successful run, or after it detects `.training_complete` on restart. This prevents platforms that restart completed containers from looping back into training. If the container has an interactive TTY, it opens `/bin/bash`; otherwise it sleeps forever until you attach or stop the pod. Set `KEEP_ALIVE_AFTER_TRAINING=false` for CI-style exit behavior.
 
 ## Local GPU Test
 
