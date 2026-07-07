@@ -65,6 +65,17 @@ MODEL_INIT_JSON='{"pretrain_weights": null}'
 EXTRA_EXPORT_ARGS_JSON='{"dynamic_batch": true}'
 ```
 
+## Early Stopping
+
+Enable RF-DETR early stopping with:
+
+```bash
+EARLY_STOPPING=true
+EXTRA_TRAIN_ARGS_JSON='{"eval_interval":5,"patience":10}'
+```
+
+`EARLY_STOPPING=true` turns on RF-DETR's early stopping logic. `patience` controls how many validation checks can pass without improvement before training stops, so it works together with `eval_interval`. For example, `eval_interval=5` and `patience=10` allows up to 10 validation checks, or roughly 50 epochs, without improvement.
+
 ## RunPod Setup
 
 Create a RunPod pod or template with:
